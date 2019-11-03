@@ -2,7 +2,9 @@
   <div class="container">
     <div class="col-sm-10">
       <h1>Задачи</h1>
-
+      <confirmation :message="message"
+                    v-if='showConfirmation'>
+      </confirmation>
       <button type="button"
               id="task-add"
               class="btn btn-success btn-sm align-left d-block"
@@ -75,11 +77,12 @@
 <script>
 // импортируем библиотеку для работы с http запросами
 import axios from 'axios';
+import Confirmation from './Confirmation.vue';
 
-// const dataURL = 'http://localhost:5000/api/tasks/';
 const todoListURL = 'http://localhost:5000/api/tasks/';
-// const todoAddURL = 'http://localhost:5000/api/add-task/';
 const todoAddURL = 'http://localhost:5000/api/tasks/';
+// const todoAddURL = 'http://localhost:5000/api/add-task/';
+// const dataURL = 'http://localhost:5000/api/tasks/';
 
 
 export default {
@@ -98,6 +101,8 @@ export default {
         // v-model.
         is_completed: [],
       },
+      message: '',
+      showConfirmation: false,
     };
   },
   // вынесли логику после сreated в методы чтобы не загромомждать
@@ -128,6 +133,11 @@ export default {
       axios.post(todoAddURL, requestData)
         .then(() => {
           this.getTodos();
+          this.message = `Задача "${requestData.description}" добавлена`;
+          this.showConfirmation = true;
+          setTimeout(() => {
+            this.showConfirmation = false;
+          }, 3000);
         });
       // приводим значения полей формы в начальное состояние
       this.resetForm();
@@ -140,6 +150,9 @@ export default {
     },
   },
   // определяем поведение компонента при загрузке с помощью created
+  components: {
+    confirmation: Confirmation,
+  },
   created() {
     this.getTodos();
   },
