@@ -76,8 +76,28 @@ def add_task():
             tasks_db[new_uid] = t
         return "OK"
 
+#метод получения конкретного товара, изменения и удаления товара
+@enable_cors
+@app.route("/api/tasks/<uid:int>", method=["GET", "PUT", "DELETE"])
+def show_or_modify_task(uid):
+    if bottle.request.method == "GET":
+        return tasks_db[uid].to_dict()
+    elif bottle.request.method == "PUT":
+        #В PUT нам могут приходить не все параметры, поэтому мы перестраховываемся в этом месте и проверяем их наличие
+        # в приходящем JSON прежде чем править их в нашей "базе"
+        if "description" in bottle.request.json:
+            tasks_db[uid].description = bottle.request.json['description']
+        if "is_completed" in bottle.request.json:
+            print(bottle.request.json['is_completed'])
+            tasks_db[uid].is_completed = bottle.request.json['is_completed']
+        else:
+            tasks_db[uid].is_completed = False
+        return f"Modified task {uid}"
+    elif bottle.request.method == "DELETE":
+        tasks_db.pop(uid)
+        return f"Deleted task {uid}"
 
-
+"""
 @enable_cors
 @app.route("/api/delete/<uid:int>")
 def api_delete(uid):
@@ -89,7 +109,7 @@ def api_delete(uid):
 def api_complete(uid):
     tasks_db[uid].is_completed = True
     return "Ok"
-
+"""
 
 app.install(CorsPlugin(origins=['http://localhost:8080']))
 

@@ -33,9 +33,18 @@
           </td>
           <td>
             <div class="btn-group" role="group">
-              <button type="button" class="btn btn-secondary btn-sm">Обновить</button>
+              <button type="button"
+                      class="btn btn-secondary btn-sm"
+                      v-b-modal.todo-update-modal
+                      @click="updateTodo(todo)">
+                Обновить
+              </button>
               &nbsp;
-              <button type="button" class="btn btn-danger btn-sm">X</button>
+              <button type="button"
+                      class="btn btn-danger btn-sm"
+                      @click="deleteTodo(todo)">
+                X
+              </button>
             </div>
           </td>
         </tr>
@@ -70,6 +79,32 @@
           <b-button type="reset" variant="danger">Сброс</b-button>
         </b-form>
       </b-modal>
+
+      <b-modal ref="updateTodoModal"
+               id="todo-update-modal"
+               title="Update"
+               hide-footer>
+        <b-form @submit="onUpdateSubmit" @reset="onUpdateReset" class="w-100">
+          <b-form-group id="form-update-description-group"
+                        label="Описание:"
+                        label-for="form-update-description-input">
+            <b-form-input id="form-update-description-input"
+                          type="text"
+                          v-model="updateTodoForm.description"
+                          required>
+            </b-form-input>
+          </b-form-group>
+          <b-form-group id="form-update-complete-group">
+            <b-form-checkbox-group v-model="updateTodoForm.is_completed" id="form-update-checks">
+              <b-form-checkbox value="true">Задача выполнена?</b-form-checkbox>
+            </b-form-checkbox-group>
+          </b-form-group>
+          <b-button-group>
+            <b-button type="submit" variant="primary">Обновить</b-button>
+            <b-button type="reset" variant="danger">Сброс</b-button>
+          </b-button-group>
+        </b-form>
+      </b-modal>
     </div>
   </div>
 </template>
@@ -101,6 +136,12 @@ export default {
         // v-model.
         is_completed: [],
       },
+      // добавили новый объект для формы изменения задачи
+      updateTodoForm: {
+        uid: 0,
+        description: '',
+        is_completed: [],
+      },
       message: '',
       showConfirmation: false,
     };
@@ -120,6 +161,11 @@ export default {
     resetForm() {
       this.addTodoForm.description = '';
       this.addTodoForm.is_completed = [];
+    },
+    resetFormUpdate() {
+      // аналогично при обновлении формы - мы сбрасываем значение полей
+      this.updateTodoForm.description = '';
+      this.updateTodoForm.is_completed = [];
     },
     onSubmit(event) {
       event.preventDefault(); //  стопаем действ по умолч
@@ -147,6 +193,48 @@ export default {
       // потому что мы сначала должны спрятать модальное окно и потом ещё сбросить форму.
       this.$refs.addTodoModal.hide();
       this.resetForm();
+    },
+    // обновляем объект с обновлен данныммы в новом методе updateTodo
+    updateTodo(todo) {
+      this.updateTodoForm = todo;
+    },
+    onUpdateSubmit(event) {
+      // делаем тоже самое что с сабмит просто другим методом
+      event.preventDefault();
+      this.$refs.updateTodoModal.hide();
+      const requestData = {
+        description: this.updateTodoForm.description,
+        is_completed: this.updateTodoForm.is_completed[0],
+      };
+      // добавляем id таски в путь
+      const todoURL = todoListURL + this.updateTodoForm.uid;
+      console.log(requestData);
+      axios.put(todoURL, requestData)
+        .then(() => {
+          this.getTodos();
+          this.message = 'Задача обновлена';
+          this.showConfirmation = true;
+          setTimeout(() => {
+            this.showConfirmation = false;
+          }, 3000);
+        });
+    },
+    onUpdateReset(event) {
+      event.preventDefault();
+      this.$refs.updateTodoModal.hide();
+      this.resetFormUpdate();
+    },
+    deleteTodo(todo) {
+      const todoURL = todoListURL + todo.uid;
+      axios.delete(todoURL)
+        .then(() => {
+          this.getTodos();
+          this.message = 'Задача удалена из списка';
+          this.showConfirmation = true;
+          setTimeout(() => {
+            this.showConfirmation = false;
+          }, 3000);
+        });
     },
   },
   // определяем поведение компонента при загрузке с помощью created
