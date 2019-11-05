@@ -31,16 +31,16 @@ class TodoItem:
 #В качестве базы данных у нас выступает словарик tasks_db с объектами TodoItem? где ключом являются ID этих задач.
 tasks_db = {
     uid: TodoItem(desc, uid)
-    for uid, desc in enumerate(
-        start=1,
-        iterable=[
-            "написать код",
-            "покормить морскую свинку",
-            "постирать кроссовки",
-            "поесть еды",
-        ])
-}
-"""
+        for uid, desc in enumerate(
+            start=1,
+            iterable=[
+                "написать код",
+                "покормить морскую свинку",
+                "постирать кроссовки",
+                "поесть еды",
+            ])
+};
+""" 
 @enable_cors
 @app.route("/api/tasks/")
 def index():

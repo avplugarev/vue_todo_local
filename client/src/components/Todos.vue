@@ -28,8 +28,8 @@
           <td class="todo-uid">{{ todo.uid }}</td>
           <td>{{ todo.description }}</td>
           <td>
-            <span v-if="todo.is_completed">Выполнено</span>
-            <span v-else>Не выполнено</span>
+            <span v-if='todo.is_completed === "false"'>Не выполнено</span>
+            <span v-else>Выполнено</span>
           </td>
           <td>
             <div class="btn-group" role="group">
@@ -71,8 +71,14 @@
             </b-form-input>
           </b-form-group>
           <b-form-group id="form-complete-group">
-            <b-form-checkbox-group v-model="addTodoForm.is_completed" id="form-checks">
-              <b-form-checkbox value="true">Задача выполнена?</b-form-checkbox>
+            <b-form-checkbox-group>
+              <b-form-checkbox
+                id="form-checks"
+                v-model="addTodoForm.is_completed"
+                value='true'
+                unchecked-value='false'>
+                Задача выполнена?
+              </b-form-checkbox>
             </b-form-checkbox-group>
           </b-form-group>
           <b-button type="submit" variant="primary">Добавить</b-button>
@@ -115,7 +121,7 @@ import axios from 'axios';
 import Confirmation from './Confirmation.vue';
 
 const todoListURL = 'http://localhost:5000/api/tasks/';
-const todoAddURL = 'http://localhost:5000/api/tasks/';
+// const todoAddURL = 'http://localhost:5000/api/tasks/';
 // const todoAddURL = 'http://localhost:5000/api/add-task/';
 // const dataURL = 'http://localhost:5000/api/tasks/';
 
@@ -134,13 +140,13 @@ export default {
         // зрения тех, кто разрабатывал стандарт, необходимость в одинокой галке бывает редко).
         // Именно объект addTodoForm используется внутри модала для привязки к модели через
         // v-model.
-        is_completed: [],
+        is_completed: 'false',
       },
       // добавили новый объект для формы изменения задачи
       updateTodoForm: {
         uid: 0,
         description: '',
-        is_completed: [],
+        is_completed: '',
       },
       message: '',
       showConfirmation: false,
@@ -148,45 +154,98 @@ export default {
   },
   // вынесли логику после сreated в методы чтобы не загромомждать
   methods: {
+    getUID() {
+      if (localStorage.getItem('counter') === null) {
+        const newuid = 0;
+        localStorage.setItem('counter', newuid);
+      } else {
+        const uid = localStorage.getItem('counter');
+        const newuid = uid * 1 + 1;
+        localStorage.setItem('counter', newuid);
+      }
+    },
     getTodos() {
+      const tasks = [];
+      let listUid = 0;
+      for (let i = 0; i < localStorage.length; i += 1) {
+        const key = localStorage.key(i);
+        console.log('провер ключ', key);
+        console.log(key.indexOf('task'));
+        if (key.indexOf('task') !== -1) {
+          console.log('ура попал');
+          const savedtask = JSON.parse(localStorage.getItem(key));
+          console.log('отпарсили', savedtask);
+          savedtask.uid = listUid;
+          console.log('поправили номер задачи', savedtask);
+          console.log('нов гшв', listUid);
+          listUid += 1;
+          console.log('нов гшв', listUid);
+          tasks.push(savedtask);
+          // console.log(key, tasks);
+        }
+      }
+      console.log('финал', tasks);
+      this.todos = tasks;
+      for (let i = 0; i < this.todos.length; i += 1) {
+        console.log(this.todos[i]);
+      }
+
+      /*
+      if (m === null) {
+        console.log('получаем данные', m);
+        m = [];
+      } else {
+        const jsonunparsed = JSON.parse(m);
+        this.todos = [jsonunparsed];
+      }
+      */
+      /*
       axios.get(todoListURL)
         .then((response) => {
           // по сути кладем ответ из даты ответа в todos
+          console.log(response.data.tasks);
           this.todos = response.data.tasks;
         });
+      */
     },
     // Так как сброс полей формы нам нужно делать в обоих случаях (и если мы добавляем задачу, и
     // если отменяем), то мы выносим общий код в метод resetForm, в котором мы просто приводим
     // объект addTodoForm к его изначальному состоянию.
     resetForm() {
       this.addTodoForm.description = '';
-      this.addTodoForm.is_completed = [];
+      this.addTodoForm.is_completed = 'false';
     },
     resetFormUpdate() {
       // аналогично при обновлении формы - мы сбрасываем значение полей
       this.updateTodoForm.description = '';
       this.updateTodoForm.is_completed = [];
     },
+
     onSubmit(event) {
       event.preventDefault(); //  стопаем действ по умолч
       this.$refs.addTodoModal.hide(); // скрываем форму! использовть для скрытия уведомл
       // формируем даннные для отправки на сервер
-      const requestData = {
-        description: this.addTodoForm.description, // они привязываются к объекту addTodoForm
-        is_completed: this.addTodoForm.is_completed[0],
+      if (this.addTodoForm.is_completed !== 'false') {
+        console.log('попаллл');
+        this.addTodoForm.is_completed = 'true';
+      }
+      this.getUID();
+      const savedData = {
+        description: this.addTodoForm.description,
+        is_completed: this.addTodoForm.is_completed,
+        uid: localStorage.getItem('counter'),
       };
-      // отправляем данные и дергаем обратно данные для обновления таблицы
-      axios.post(todoAddURL, requestData)
-        .then(() => {
-          this.getTodos();
-          this.message = `Задача "${requestData.description}" добавлена`;
-          this.showConfirmation = true;
-          setTimeout(() => {
-            this.showConfirmation = false;
-          }, 3000);
-        });
-      // приводим значения полей формы в начальное состояние
+      const json = JSON.stringify(savedData);
+      const mykey = 'task';
+      localStorage.setItem(mykey + savedData.uid, json);
+      // приводим значения полей формы в начальное состояние */
       this.resetForm();
+      this.getTodos();
+      this.message = 'Задача добавлена в список';
+      this.showConfirmation = true;
+      setTimeout(() => {
+        this.showConfirmation = false;
+      }, 3000);
     },
     onReset(event) {
       event.preventDefault(); // первым делом отменяет действие по умолчанию для этого объекта,
