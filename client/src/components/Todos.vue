@@ -18,7 +18,7 @@
         <tr>
           <th>Uid</th>
           <th>Описание</th>
-          <th>Выполнена?</th>
+          <th>Выполнено? (Да:{{ mycounter.done }}/Нет:{{ mycounter.undone }})</th>
           <th></th>
         </tr>
         </thead>
@@ -135,6 +135,10 @@ export default {
     // наш компонент возвращает в шаблон
     return {
       todos: [],
+      mycounter: {
+        done: 0,
+        undone: 0,
+      },
       // определяем объект addTodoForm у которого те же поля, что и в модальном окне
       addTodoForm: {
         description: '',
@@ -168,16 +172,42 @@ export default {
     getTodos() {
       const tasks = [];
       let listUid = 0;
+      let done = 0;
+      let undone = 0;
       for (let i = 0; i < localStorage.length; i += 1) {
         const key = localStorage.key(i);
         if (key.indexOf('task') !== -1) {
           const savedtask = JSON.parse(localStorage.getItem(key));
+          if (savedtask.is_completed === 'false') {
+            undone += 1;
+          } else {
+            done += 1;
+          }
           savedtask.uid = listUid;
           listUid += 1;
           tasks.push(savedtask);
         }
       }
       this.todos = tasks;
+      this.mycounter.done = done;
+      this.mycounter.undone = undone;
+    },
+    getTaskStatus() {
+      let done = 0;
+      let undone = 0;
+      for (let i = 0; i < localStorage.length; i += 1) {
+        const key = localStorage.key(i);
+        if (key.indexOf('task') !== -1) {
+          const task = JSON.parse(localStorage.getItem(key));
+          if (task.is_completed === 'false') {
+            undone += 1;
+          } else {
+            done += 1;
+          }
+        }
+      }
+      this.mycounter.alpha = done;
+      this.mycounter.betta = undone;
     },
     // сброс полей формы приводим объект addTodoForm к его изначальному состоянию.
     resetForm() {
