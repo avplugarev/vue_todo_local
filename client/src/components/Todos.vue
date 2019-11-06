@@ -177,10 +177,12 @@ export default {
     resetForm() {
       this.addTodoForm.description = '';
       this.addTodoForm.is_completed = 'false';
+      this.getTodos();
     },
     resetFormUpdate() {
       this.updateTodoForm.description = '';
       this.updateTodoForm.is_completed = 'false';
+      this.getTodos();
     },
     onSubmit(event) {
       event.preventDefault(); //  стопаем действ по умолч
@@ -191,19 +193,24 @@ export default {
       }
       this.getUID();
       const mykey = 'task';
-      const savedData = {
-        description: this.addTodoForm.description,
-        is_completed: this.addTodoForm.is_completed,
-        uid: localStorage.getItem('counter'),
-        uuid: mykey + localStorage.getItem('counter'),
-      };
-      const json = JSON.stringify(savedData);
-      savedData.uuid = mykey + savedData.uid;
-      localStorage.setItem(savedData.uuid, json);
+      try {
+        const savedData = {
+          description: this.addTodoForm.description,
+          is_completed: this.addTodoForm.is_completed,
+          uid: localStorage.getItem('counter'),
+          uuid: mykey + localStorage.getItem('counter'),
+        };
+        const json = JSON.stringify(savedData);
+        savedData.uuid = mykey + savedData.uid;
+        localStorage.setItem(savedData.uuid, json);
+        this.message = 'Задача добавлена в список';
+      } catch (e) {
+        console.log(e);
+        this.message = 'Произошла ошибка. Задача не добавлена в список';
+      }
       // приводим значения полей формы в начальное состояние
       this.resetForm();
       this.getTodos();
-      this.message = 'Задача добавлена в список';
       this.showConfirmation = true;
       setTimeout(() => {
         this.showConfirmation = false;
@@ -226,17 +233,22 @@ export default {
       if (this.addTodoForm.is_completed !== 'false') {
         this.addTodoForm.is_completed = 'true';
       }
-      const savedData = {
-        description: this.updateTodoForm.description,
-        is_completed: this.updateTodoForm.is_completed,
-        uid: this.updateTodoForm.uid,
-        uuid: this.updateTodoForm.uuid,
-      };
-      const json = JSON.stringify(savedData);
-      localStorage.setItem(savedData.uuid, json);
+      try {
+        const savedData = {
+          description: this.updateTodoForm.description,
+          is_completed: this.updateTodoForm.is_completed,
+          uid: this.updateTodoForm.uid,
+          uuid: this.updateTodoForm.uuid,
+        };
+        const json = JSON.stringify(savedData);
+        localStorage.setItem(savedData.uuid, json);
+        this.message = 'Задача обновлена';
+      } catch (e) {
+        console.log(e);
+        this.message = 'Произошла ошибка во время обновления задачи';
+      }
       this.resetFormUpdate();
       this.getTodos();
-      this.message = 'Задача обновлена';
       this.showConfirmation = true;
       setTimeout(() => {
         this.showConfirmation = false;
@@ -248,10 +260,15 @@ export default {
       this.resetFormUpdate();
     },
     deleteTodo(todo) {
-      const toDeleteUuid = todo.uuid;
-      localStorage.removeItem(toDeleteUuid);
+      try {
+        const toDeleteUuid = todo.uuid;
+        localStorage.removeItem(toDeleteUuid);
+        this.message = 'Задача удалена из списка';
+      } catch (e) {
+        console.log(e);
+        this.message = 'Произошла ошибка во время удаления задачи';
+      }
       this.getTodos();
-      this.message = 'Задача удалена из списка';
       this.showConfirmation = true;
       setTimeout(() => {
         this.showConfirmation = false;
