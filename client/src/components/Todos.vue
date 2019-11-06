@@ -123,6 +123,12 @@
 // импортируем библиотеку для работы с http запросами
 import Confirmation from './Confirmation.vue';
 
+class ValidationError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
 export default {
   name: 'Todo',
   data() {
@@ -214,7 +220,7 @@ export default {
       this.showConfirmation = true;
       setTimeout(() => {
         this.showConfirmation = false;
-      }, 3000);
+      }, 5000);
     },
     onReset(event) {
       event.preventDefault(); // первым делом отменяет действие по умолчанию для этого объекта,
@@ -234,6 +240,9 @@ export default {
         this.addTodoForm.is_completed = 'true';
       }
       try {
+        if (localStorage.getItem(this.updateTodoForm.uuid) === null) {
+          throw new ValidationError();
+        }
         const savedData = {
           description: this.updateTodoForm.description,
           is_completed: this.updateTodoForm.is_completed,
@@ -244,15 +253,20 @@ export default {
         localStorage.setItem(savedData.uuid, json);
         this.message = 'Задача обновлена';
       } catch (e) {
-        console.log(e);
-        this.message = 'Произошла ошибка во время обновления задачи';
+        if (e instanceof ValidationError) {
+          console.log(e.name);
+          this.message = 'Произошла ошибка. Задача с таким номером отсутствует';
+        } else {
+          console.log(e);
+          this.message = 'Произошла ошибка во время обновления задачи';
+        }
       }
       this.resetFormUpdate();
       this.getTodos();
       this.showConfirmation = true;
       setTimeout(() => {
         this.showConfirmation = false;
-      }, 3000);
+      }, 5000);
     },
     onUpdateReset(event) {
       event.preventDefault();
@@ -262,17 +276,25 @@ export default {
     deleteTodo(todo) {
       try {
         const toDeleteUuid = todo.uuid;
+        if (localStorage.getItem(toDeleteUuid) === null) {
+          throw new ValidationError();
+        }
         localStorage.removeItem(toDeleteUuid);
         this.message = 'Задача удалена из списка';
       } catch (e) {
-        console.log(e);
-        this.message = 'Произошла ошибка во время удаления задачи';
+        if (e instanceof ValidationError) {
+          console.log(e.name);
+          this.message = 'Произошла ошибка. Задача с таким номером отсутствует}';
+        } else {
+          console.log(e);
+          this.message = 'Произошла ошибка во время удаления задачи';
+        }
       }
       this.getTodos();
       this.showConfirmation = true;
       setTimeout(() => {
         this.showConfirmation = false;
-      }, 3000);
+      }, 5000);
     },
   },
   // определяем поведение компонента при загрузке с помощью created
