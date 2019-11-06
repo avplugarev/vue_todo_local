@@ -102,7 +102,11 @@
           </b-form-group>
           <b-form-group id="form-update-complete-group">
             <b-form-checkbox-group v-model="updateTodoForm.is_completed" id="form-update-checks">
-              <b-form-checkbox value="true">Задача выполнена?</b-form-checkbox>
+              <b-form-checkbox
+                value='true'
+                unchecked-value='false'>
+                Задача выполнена?
+              </b-form-checkbox>
             </b-form-checkbox-group>
           </b-form-group>
           <b-button-group>
@@ -117,14 +121,7 @@
 
 <script>
 // импортируем библиотеку для работы с http запросами
-import axios from 'axios';
 import Confirmation from './Confirmation.vue';
-
-const todoListURL = 'http://localhost:5000/api/tasks/';
-// const todoAddURL = 'http://localhost:5000/api/tasks/';
-// const todoAddURL = 'http://localhost:5000/api/add-task/';
-// const dataURL = 'http://localhost:5000/api/tasks/';
-
 
 export default {
   name: 'Todo',
@@ -135,9 +132,6 @@ export default {
       // определяем объект addTodoForm у которого те же поля, что и в модальном окне
       addTodoForm: {
         description: '',
-        // Единственный нюанс состоит в том, что мы сохраняем is_completed как массив, а не булевую
-        // переменную. Это связано со спецификой обработки чекбоксов в javascript ❸ (с точки
-        // зрения тех, кто разрабатывал стандарт, необходимость в одинокой галке бывает редко).
         // Именно объект addTodoForm используется внутри модала для привязки к модели через
         // v-model.
         is_completed: 'false',
@@ -146,7 +140,8 @@ export default {
       updateTodoForm: {
         uid: 0,
         description: '',
-        is_completed: '',
+        is_completed: 'false',
+        uuid: 0,
       },
       message: '',
       showConfirmation: false,
@@ -169,76 +164,43 @@ export default {
       let listUid = 0;
       for (let i = 0; i < localStorage.length; i += 1) {
         const key = localStorage.key(i);
-        console.log('провер ключ', key);
-        console.log(key.indexOf('task'));
         if (key.indexOf('task') !== -1) {
-          console.log('ура попал');
           const savedtask = JSON.parse(localStorage.getItem(key));
-          console.log('отпарсили', savedtask);
           savedtask.uid = listUid;
-          console.log('поправили номер задачи', savedtask);
-          console.log('нов гшв', listUid);
           listUid += 1;
-          console.log('нов гшв', listUid);
           tasks.push(savedtask);
-          // console.log(key, tasks);
         }
       }
-      console.log('финал', tasks);
       this.todos = tasks;
-      for (let i = 0; i < this.todos.length; i += 1) {
-        console.log(this.todos[i]);
-      }
-
-      /*
-      if (m === null) {
-        console.log('получаем данные', m);
-        m = [];
-      } else {
-        const jsonunparsed = JSON.parse(m);
-        this.todos = [jsonunparsed];
-      }
-      */
-      /*
-      axios.get(todoListURL)
-        .then((response) => {
-          // по сути кладем ответ из даты ответа в todos
-          console.log(response.data.tasks);
-          this.todos = response.data.tasks;
-        });
-      */
     },
-    // Так как сброс полей формы нам нужно делать в обоих случаях (и если мы добавляем задачу, и
-    // если отменяем), то мы выносим общий код в метод resetForm, в котором мы просто приводим
-    // объект addTodoForm к его изначальному состоянию.
+    // сброс полей формы приводим объект addTodoForm к его изначальному состоянию.
     resetForm() {
       this.addTodoForm.description = '';
       this.addTodoForm.is_completed = 'false';
     },
     resetFormUpdate() {
-      // аналогично при обновлении формы - мы сбрасываем значение полей
       this.updateTodoForm.description = '';
-      this.updateTodoForm.is_completed = [];
+      this.updateTodoForm.is_completed = 'false';
     },
-
     onSubmit(event) {
       event.preventDefault(); //  стопаем действ по умолч
       this.$refs.addTodoModal.hide(); // скрываем форму! использовть для скрытия уведомл
       // формируем даннные для отправки на сервер
       if (this.addTodoForm.is_completed !== 'false') {
-        console.log('попаллл');
         this.addTodoForm.is_completed = 'true';
       }
       this.getUID();
+      const mykey = 'task';
       const savedData = {
         description: this.addTodoForm.description,
         is_completed: this.addTodoForm.is_completed,
         uid: localStorage.getItem('counter'),
+        uuid: mykey + localStorage.getItem('counter'),
       };
       const json = JSON.stringify(savedData);
-      const mykey = 'task';
-      localStorage.setItem(mykey + savedData.uid, json);
-      // приводим значения полей формы в начальное состояние */
+      savedData.uuid = mykey + savedData.uid;
+      localStorage.setItem(savedData.uuid, json);
+      // приводим значения полей формы в начальное состояние
       this.resetForm();
       this.getTodos();
       this.message = 'Задача добавлена в список';
@@ -261,22 +223,24 @@ export default {
       // делаем тоже самое что с сабмит просто другим методом
       event.preventDefault();
       this.$refs.updateTodoModal.hide();
-      const requestData = {
+      if (this.addTodoForm.is_completed !== 'false') {
+        this.addTodoForm.is_completed = 'true';
+      }
+      const savedData = {
         description: this.updateTodoForm.description,
-        is_completed: this.updateTodoForm.is_completed[0],
+        is_completed: this.updateTodoForm.is_completed,
+        uid: this.updateTodoForm.uid,
+        uuid: this.updateTodoForm.uuid,
       };
-      // добавляем id таски в путь
-      const todoURL = todoListURL + this.updateTodoForm.uid;
-      console.log(requestData);
-      axios.put(todoURL, requestData)
-        .then(() => {
-          this.getTodos();
-          this.message = 'Задача обновлена';
-          this.showConfirmation = true;
-          setTimeout(() => {
-            this.showConfirmation = false;
-          }, 3000);
-        });
+      const json = JSON.stringify(savedData);
+      localStorage.setItem(savedData.uuid, json);
+      this.resetFormUpdate();
+      this.getTodos();
+      this.message = 'Задача обновлена';
+      this.showConfirmation = true;
+      setTimeout(() => {
+        this.showConfirmation = false;
+      }, 3000);
     },
     onUpdateReset(event) {
       event.preventDefault();
@@ -284,16 +248,14 @@ export default {
       this.resetFormUpdate();
     },
     deleteTodo(todo) {
-      const todoURL = todoListURL + todo.uid;
-      axios.delete(todoURL)
-        .then(() => {
-          this.getTodos();
-          this.message = 'Задача удалена из списка';
-          this.showConfirmation = true;
-          setTimeout(() => {
-            this.showConfirmation = false;
-          }, 3000);
-        });
+      const toDeleteUuid = todo.uuid;
+      localStorage.removeItem(toDeleteUuid);
+      this.getTodos();
+      this.message = 'Задача удалена из списка';
+      this.showConfirmation = true;
+      setTimeout(() => {
+        this.showConfirmation = false;
+      }, 3000);
     },
   },
   // определяем поведение компонента при загрузке с помощью created
