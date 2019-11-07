@@ -18,7 +18,8 @@
         <tr>
           <th>Uid</th>
           <th>Описание</th>
-          <th>Выполнено? (Да:{{ mycounter.done }}/Нет:{{ mycounter.undone }})</th>
+          <th>Выполнено? (Да:{{ mycounter.done }}/Нет:{{ mycounter.undone }} Всего:
+            {{ mycounter.all }})</th>
           <th></th>
         </tr>
         </thead>
@@ -138,6 +139,7 @@ export default {
       mycounter: {
         done: 0,
         undone: 0,
+        all: 0,
       },
       // определяем объект addTodoForm у которого те же поля, что и в модальном окне
       addTodoForm: {
@@ -191,6 +193,7 @@ export default {
       this.todos = tasks;
       this.mycounter.done = done;
       this.mycounter.undone = undone;
+      this.mycounter.all = done * 1 + undone * 1;
     },
     getTaskStatus() {
       let done = 0;
